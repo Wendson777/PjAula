@@ -7,15 +7,17 @@ import {
   Image,
   StyleSheet,
   TouchableOpacity,
-  ActivityIndicator, // Importado para mostrar loading
+  ActivityIndicator,
+  Dimensions,
 } from "react-native";
 
-import Header from "../../Components/Header"; // Certifique-se que o caminho está correto
+import Header from "../../Components/Header";
 
-// Função para formatar o preço, adaptada do seu primeiro código
+const screenWidth = Dimensions.get("window").width;
+const itemWidth = (screenWidth - 15 * 3) / 2;
+
 function formatarPreco(valor) {
   if (typeof valor !== "number" || isNaN(valor)) {
-    // Pode retornar o valor bruto ou um texto de erro se a API retornar dados inconsistentes
     return `R$ ${valor}`;
   }
 
@@ -27,7 +29,6 @@ function formatarPreco(valor) {
   return formatter.format(valor);
 }
 
-// Componente para renderizar cada item (produto) na lista
 function Item(props) {
   const navigation = useNavigation();
 
@@ -36,43 +37,46 @@ function Item(props) {
   }
 
   return (
-    <TouchableOpacity onPress={mudarTela} style={styles.container}>
-      <Image style={styles.img} source={{ uri: props.produto.thumbnail }} />
+    <TouchableOpacity onPress={mudarTela} style={styles.gridContainer}>
+      <View style={styles.imgContainer}>
+        <Image
+          style={styles.img}
+          source={{ uri: props.produto.thumbnail }}
+          resizeMode="contain"
+        />
+      </View>
       <View style={styles.containerInfo}>
-        <Text style={styles.title}>{props.produto.title}</Text>
-        <Text style={styles.description}>
-          {formatarPreco(props.produto.price)}
+        <Text style={styles.title} numberOfLines={2}>
+          {props.produto.title}
         </Text>
+        <Text style={styles.price}>{formatarPreco(props.produto.price)}</Text>
       </View>
     </TouchableOpacity>
   );
 }
 
-// Componente principal Home
 export default function Home() {
   const [products, setProducts] = useState([]);
-  const [isLoading, setIsLoading] = useState(true); // Começa como true para carregar
+  const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
 
   async function getProducts() {
     try {
       setIsError(false);
-      setIsLoading(true); // Inicia o carregamento
-      const response = await fetch("https://dummyjson.com/products");
+      setIsLoading(true);
+      const response = await fetch("https://dummyjson.com/products?limit=30");
 
       if (!response.ok) {
         throw new Error("Erro na resposta da API");
       }
 
       const productsData = await response.json();
-      // A API dummyjson retorna os produtos dentro da chave 'products'
       setProducts(productsData?.products || []);
     } catch (err) {
       console.error("Erro ao buscar produtos:", err);
       setIsError(true);
-      // Você pode adicionar um alerta aqui se quiser: alert("Erro ao buscar produtos, tente novamente mais tarde!");
     } finally {
-      setIsLoading(false); // Finaliza o carregamento, independente de sucesso ou erro
+      setIsLoading(false);
     }
   }
 
@@ -105,52 +109,80 @@ export default function Home() {
       <Header />
       <FlatList
         data={products}
-        // Usamos item.id (da API dummyjson) como keyExtractor
+        key={`flatlist-columns-${2}`}
         keyExtractor={(item) => item.id.toString()}
-        // Passamos o produto (item) para o componente Item
         renderItem={({ item }) => <Item produto={item} />}
+        numColumns={2}
+        contentContainerStyle={styles.flatListContent}
+        columnWrapperStyle={styles.columnWrapper}
       />
     </View>
   );
 }
 
-// Estilos (mantidos e ajustados)
 const styles = StyleSheet.create({
   containerFull: {
-    flex: 1, // Adicionado para ocupar a tela inteira, importante para FlatList
+    flex: 1,
+    backgroundColor: "#f5f5f5",
   },
   loading: {
     justifyContent: "center",
     alignItems: "center",
   },
-  container: {
-    flexDirection: "row",
-    marginBottom: 2,
-    padding: 10, // Adicionado padding para melhor visualização
-    borderBottomWidth: 1, // Separador
-    borderBottomColor: "#eee",
+  flatListContent: {
+    paddingVertical: 10,
+  },
+  columnWrapper: {
+    justifyContent: "space-between",
+    marginBottom: 10,
+    paddingHorizontal: 10,
+  },
+  gridContainer: {
+    width: itemWidth,
     backgroundColor: "#fff",
+    borderRadius: 8,
+    overflow: "hidden",
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.22,
+    shadowRadius: 2.22,
+  },
+  imgContainer: {
+    width: "100%",
+    height: itemWidth,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#fff",
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
   },
   img: {
-    width: 100,
-    height: 100,
-    resizeMode: "contain", // Para garantir que a imagem se ajuste bem
-    marginRight: 10,
+    width: "90%",
+    height: "90%",
   },
+
   containerInfo: {
-    paddingVertical: 5,
-    flex: 1,
-    justifyContent: "center",
+    padding: 8,
+    justifyContent: "space-between",
+    minHeight: 80,
+    alignItems: "center",
   },
+
   title: {
-    fontSize: 16, // Um pouco menor para melhor adaptação
-    fontWeight: "700",
-  },
-  description: {
     fontSize: 14,
-    fontWeight: "400", // Corrigido para string
-    color: "#00A86B", // Cor para o preço
+    fontWeight: "500",
+    lineHeight: 18,
+    marginBottom: 5,
+    textAlign: "center",
+  },
+
+  price: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#00A86B",
     marginTop: 5,
+    textAlign: "center",
   },
   errorText: {
     textAlign: "center",

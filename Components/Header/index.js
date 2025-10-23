@@ -9,13 +9,18 @@ import {
 } from "react-native";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import Feather from "@expo/vector-icons/Feather";
-import { useNavigation, DrawerActions } from "@react-navigation/native";
+import {
+  useNavigation,
+  useRoute,
+  DrawerActions,
+} from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const screenWidth = Dimensions.get("window").width;
 
 export default function Header() {
   const navigation = useNavigation();
+  const route = useRoute();
 
   const [userName, setUserName] = useState(null);
 
@@ -30,13 +35,28 @@ export default function Header() {
     return unsubscribe;
   }, [navigation]);
 
+  const shouldShowBackButton =
+    route.name === "Details" || route.name === "Carrinho";
+
+  const canGoBack = navigation.canGoBack();
+
   return (
     <View style={styles.container}>
       <TouchableOpacity
         style={styles.menu}
-        onPress={() => navigation.dispatch(DrawerActions.toggleDrawer())}
+        onPress={() => {
+          if (shouldShowBackButton || canGoBack) {
+            navigation.goBack();
+          } else {
+            navigation.dispatch(DrawerActions.toggleDrawer());
+          }
+        }}
       >
-        <Feather name="menu" size={28} color="white" />
+        {shouldShowBackButton || canGoBack ? (
+          <Feather name="arrow-left" size={28} color="white" />
+        ) : (
+          <Feather name="menu" size={28} color="white" />
+        )}
       </TouchableOpacity>
 
       <View style={styles.conteinerPesquisa}>
@@ -57,14 +77,14 @@ export default function Header() {
             style={styles.profileIcon}
             onPress={() => console.log("Usuário logado. Perfil pendente.")}
           >
-            <Feather name="user" size={24} color="#05419A" />
+            <Feather name="user" size={24} color="#00A86B" />
           </TouchableOpacity>
         )}
       </View>
 
       <View style={styles.cart}>
-        <TouchableOpacity onPress={() => navigation.navigate("Cart")}>
-          <AntDesign name="shopping" size={24} color="#05419A" />
+        <TouchableOpacity onPress={() => navigation.navigate("Carrinho")}>
+          <AntDesign name="shopping" size={24} color="#00A86B" />
         </TouchableOpacity>
       </View>
     </View>
@@ -78,7 +98,7 @@ const styles = StyleSheet.create({
     width: "100%",
     paddingHorizontal: 15,
     paddingTop: 40,
-    backgroundColor: "#05419A",
+    backgroundColor: "#00A86B",
     alignItems: "center",
     justifyContent: "space-between",
   },
@@ -109,7 +129,7 @@ const styles = StyleSheet.create({
     marginLeft: 5,
   },
   LoginText: {
-    color: "#05419A",
+    color: "#00A86B",
     fontWeight: "bold",
     fontSize: 14,
   },

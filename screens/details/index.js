@@ -1,9 +1,11 @@
+import React from "react";
 import {
   Text,
   View,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Alert,
 } from "react-native";
 import { useRoute } from "@react-navigation/native";
 import Header from "../../Components/Header";
@@ -11,7 +13,7 @@ import Carrossel from "../../Components/Carrossel";
 import ProductSpecs from "../../Components/ProductSpecs";
 import Favoritos from "../../Components/Favoritos";
 import ShareButton from "../../Components/ShareButton";
-import ProductReviews from "../../Components/ProductReviews"; // Importação
+import ProductReviews from "../../Components/ProductReviews";
 
 function formatarPreco(valor) {
   if (typeof valor !== "number" || isNaN(valor)) {
@@ -26,11 +28,48 @@ function formatarPreco(valor) {
   return formatter.format(valor);
 }
 
+async function adicionarAoCarrinhoAPI(produtoId) {
+  try {
+    const response = await fetch("https://dummyjson.com/carts/add", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        userId: 1,
+        products: [
+          {
+            id: produtoId,
+            quantity: 1,
+          },
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Erro de rede: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log("Resposta da API (Carrinho):", data);
+
+    Alert.alert(
+      "Sucesso",
+      `"${data.products[0].title}" adicionado ao carrinho!`
+    );
+  } catch (error) {
+    console.error("Erro ao adicionar ao carrinho:", error);
+    Alert.alert(
+      "Erro",
+      "Não foi possível adicionar o produto ao carrinho. Verifique sua conexão."
+    );
+  }
+}
+
 export default function Details() {
   const routes = useRoute();
   const produto = routes.params.produto;
 
-  // CÁLCULO DO PREÇO ORIGINAL
   let precoOriginal = null;
   if (produto.discountPercentage && produto.discountPercentage > 0) {
     precoOriginal = produto.price / (1 - produto.discountPercentage / 100);
@@ -88,14 +127,21 @@ export default function Details() {
 
       <View style={styles.actionButtonContainer}>
         <TouchableOpacity
-          style={styles.addToCartButton}
+          style={[
+            styles.addToCartButton,
+            produto.stock <= 0 && styles.disabledButton,
+          ]}
+          onPress={() => adicionarAoCarrinhoAPI(produto.id)}
           disabled={produto.stock <= 0}
         >
           <Text style={styles.buttonText}>Adicionar ao Carrinho</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.buyNowButton}
+          style={[
+            styles.buyNowButton,
+            produto.stock <= 0 && styles.disabledButton,
+          ]}
           disabled={produto.stock <= 0}
         >
           <Text style={styles.buttonText}>Comprar Agora</Text>
@@ -192,5 +238,8 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 16,
     fontWeight: "bold",
+  },
+  disabledButton: {
+    opacity: 0.5,
   },
 });
